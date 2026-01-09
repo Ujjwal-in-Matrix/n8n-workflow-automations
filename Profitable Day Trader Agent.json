@@ -1,0 +1,509 @@
+{
+  "name": "Profitable Day Trader Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -384,
+        -48
+      ],
+      "id": "28d5e4c0-413f-432c-9935-61a68dd2e929",
+      "name": "Telegram Trigger",
+      "webhookId": "ce107697-7ee2-4bbd-986c-beadb7569e3c",
+      "credentials": {
+        "telegramApi": {
+          "id": "4Pv1oeruaRrZZG9q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.twelvedata.com/time_series",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "={{ $json.message.text }}"
+            },
+            {
+              "name": "interval",
+              "value": "1min"
+            },
+            {
+              "name": "apikey",
+              "value": "a58d12457bbf43ffba012b6b12ba7567"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -48,
+        -256
+      ],
+      "id": "c003db22-aca6-452d-8210-7fb159d753e3",
+      "name": "1min"
+    },
+    {
+      "parameters": {
+        "url": "https://api.twelvedata.com/time_series",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "={{ $json.message.text }}"
+            },
+            {
+              "name": "interval",
+              "value": "15min"
+            },
+            {
+              "name": "apikey",
+              "value": "a58d12457bbf43ffba012b6b12ba7567"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -48,
+        -64
+      ],
+      "id": "1165f28a-3add-4176-ae16-0c3ae2f51820",
+      "name": "15min"
+    },
+    {
+      "parameters": {
+        "url": "https://api.twelvedata.com/time_series",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "={{ $json.message.text }}"
+            },
+            {
+              "name": "interval",
+              "value": "1h"
+            },
+            {
+              "name": "apikey",
+              "value": "a58d12457bbf43ffba012b6b12ba7567"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -48,
+        128
+      ],
+      "id": "634976d3-873b-4fd0-8027-cad898837a1a",
+      "name": "1h"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        288,
+        -80
+      ],
+      "id": "57a1abff-756b-4d02-8f9e-a56ec76daae1",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "Q",
+              "value": "={{ $json.message.text }}"
+            },
+            {
+              "name": "From",
+              "value": "={{ DateTime.now().minus({ days: 1 }).toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "apiKey",
+              "value": "6c7625bf4109429b8c560869757bf289"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -528,
+        304
+      ],
+      "id": "7eb5ca9f-fe78-49be-86e3-6b64fd377659",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Analyze the following news articles for sentiment toward XAUUSD:\n\n[\n  { \"title\": \"Gold rises as dollar weakens\", \"description\": \"XAU/USD gained as the USD fell after dovish Fed commentary.\" },\n  { \"title\": \"Fed minutes hint at possible rate cuts\", \"description\": \"Traders expect lower rates later this year, boosting gold demand.\" },\n  { \"title\": \"Geopolitical tensions ease in Middle East\", \"description\": \"Reduced safe-haven demand may weigh on gold prices.\" }\n]\n"
+            },
+            {
+              "content": "You are a financial news sentiment analysis engine. \nYour task is to analyze each news item about a financial instrument and return:\n- sentiment score ∈ [-1.0, 1.0] where:\n  -1.0 = very bearish, -0.5 = bearish, 0.0 = neutral, +0.5 = bullish, +1.0 = very bullish\n- sentiment label: \"bearish\", \"neutral\", or \"bullish\"\n- impact: classify as \"low\", \"medium\", or \"high\" based on how strongly it could affect the instrument (e.g., central bank policy, geopolitical conflict = high; analyst opinion = low).\n- reasoning: short explanation (1–2 lines) why this sentiment was chosen.\n\nRules:\n- Focus only on the likely effect on the specified instrument (e.g., XAUUSD).\n- Be concise, structured, and consistent.\n- Always return valid JSON.\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -368,
+        304
+      ],
+      "id": "9d73b598-23a0-42bb-be34-2de3e9fe4503",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "38H0UHTuRtXjkOyt",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        496,
+        -80
+      ],
+      "id": "ebc3d86b-919a-4f67-8835-5a42081585a2",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (JavaScript) — ALWAYS returns an array of items\ntry {\n  const inputItems = $input.all();\n  if (!inputItems.length) {\n    return [{ json: { error: \"No input items received\" } }];\n  }\n\n  // ---------- helpers ----------\n  const num = v => (v === null || v === undefined || v === \"\" ? undefined : Number(v));\n  const isFiniteNum = v => Number.isFinite(v);\n\n  function toEpochMsLoose(t) {\n    if (t === null || t === undefined) return undefined;\n    const n = Number(t);\n    if (Number.isFinite(n)) return n < 1e12 ? n * 1000 : n; // sec→ms\n    if (typeof t === \"string\") {\n      const isoish = t.includes(\"T\") ? t : t.replace(\" \", \"T\");\n      const withZ = /Z$/.test(isoish) ? isoish : isoish + \"Z\";\n      const d = new Date(withZ);\n      if (!Number.isNaN(d.getTime())) return d.getTime();\n    }\n    const d = new Date(t);\n    return Number.isNaN(d.getTime()) ? undefined : d.getTime();\n  }\n\n  function normInterval(raw) {\n    if (!raw) return \"UNKNOWN\";\n    const s = String(raw).toLowerCase().replace(/\\s+/g, \"\");\n    if ([\"1m\",\"1min\",\"1minute\"].includes(s)) return \"1m\";\n    if ([\"15m\",\"15min\",\"15minute\"].includes(s)) return \"15m\";\n    if ([\"1h\",\"1hr\",\"1hour\"].includes(s)) return \"1h\";\n    return raw;\n  }\n\n  function pick(obj, keys) {\n    for (const k of keys) {\n      if (obj?.[k] !== undefined && obj?.[k] !== null && obj?.[k] !== \"\") return obj[k];\n    }\n    return undefined;\n  }\n\n  // ---------- gather ----------\n  let symbol = \"UNKNOWN\";\n  let timeZone = \"UTC\";\n  const buckets = { \"1m\": [], \"15m\": [], \"1h\": [] };\n\n  for (const item of inputItems) {\n    const root = item.json || {};\n    const dataArr = Array.isArray(root.data) ? root.data : [];\n\n    for (const block of dataArr) {\n      const meta = block.meta || {};\n      const vals = Array.isArray(block.values) ? block.values : [];\n\n      if (symbol === \"UNKNOWN\") {\n        const s =\n          pick(meta, [\"symbol\", \"pair\", \"ticker\"]) ||\n          `${pick(meta, [\"currency_base\"]) || \"\"}/${pick(meta, [\"currency_quote\"]) || \"\"}`;\n        symbol = (s && s !== \"/\") ? String(s) : \"UNKNOWN\";\n      }\n      if (timeZone === \"UTC\") {\n        timeZone = pick(meta, [\"timeZone\", \"timezone\", \"tz\", \"zone\"]) || \"UTC\";\n      }\n\n      const interval = normInterval(pick(meta, [\"interval\", \"timeframe\", \"granularity\"]));\n\n      for (const row of vals) {\n        const epochMs = toEpochMsLoose(pick(row, [\"datetime\", \"time\", \"timestamp\", \"ts\"]));\n        const open  = num(pick(row, [\"open\", \"o\"]));\n        const high  = num(pick(row, [\"high\", \"h\"]));\n        const low   = num(pick(row, [\"low\", \"l\"]));\n        const close = num(pick(row, [\"close\", \"c\"]));\n        const volume = num(pick(row, [\"volume\", \"v\"]));\n\n        if (!Number.isFinite(epochMs) || !Number.isFinite(open) || !Number.isFinite(high) || !Number.isFinite(low) || !Number.isFinite(close)) {\n          continue;\n        }\n\n        const candle = {\n          epochMs,\n          isoTime: new Date(epochMs).toISOString(),\n          open, high, low, close,\n          volume: Number.isFinite(volume) ? volume : null,\n        };\n\n        const key = [\"1m\", \"15m\", \"1h\"].includes(interval) ? interval : null;\n        if (key) buckets[key].push(candle);\n      }\n    }\n  }\n\n  // de-dupe, sort, cap 100\n  for (const key of [\"1m\", \"15m\", \"1h\"]) {\n    const byTs = new Map();\n    for (const c of buckets[key]) byTs.set(c.epochMs, c);\n    const arr = Array.from(byTs.values()).sort((a, b) => a.epochMs - b.epochMs);\n    buckets[key] = arr.length > 100 ? arr.slice(-100) : arr;\n  }\n\n  const meta = {\n    generatedAt: new Date().toISOString(),\n    candleCounts: {\n      \"1m\": buckets[\"1m\"].length,\n      \"15m\": buckets[\"15m\"].length,\n      \"1h\": buckets[\"1h\"].length,\n    },\n  };\n\n  return [{\n    json: {\n      symbol,\n      timeZone,\n      intervals: buckets,\n      meta,\n    }\n  }];\n\n} catch (err) {\n  // Guarantee an array of items even on error\n  return [{ json: { error: true, message: String(err?.message || err) } }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        -96
+      ],
+      "id": "546d46f6-e9a1-4798-b5a5-8d892dd273b2",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        928,
+        0
+      ],
+      "id": "db4b5023-715e-4e96-a32a-dcb1e9cee518",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        -32
+      ],
+      "id": "c34d60f4-350f-4571-beb7-4704001b6f5e",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Role & Objective\nYou are an elite discretionary trader with 25+ years of experience, specializing in Conceptual Trading (CT) and Smart Money Concepts (SMC). Your core playbook is the liquidity sweep → displacement → fair value gap/order block retest model, aligned to higher‑timeframe bias.\nYour job: from the provided market data and news sentiment, return one of: BUY NOW, SELL NOW, or HOLD, plus precise ENTRY, STOP LOSS, TP1, TP2, and a concise rationale.\n\nInput (provided by n8n as JSON)\n{\n  \"symbol\": \"{{ $json.data[0].symbol }}\",\n  \"server_time_utc\": \"2025-08-24T12:15:00Z\",\n  \"candle_data\": {\n    \"M1\": { \"last_100\": [ { \"t\": \"...\", \"open\": 0, \"high\": 0, \"low\": 0, \"close\": 0 }, ... ] },\n    \"M15\": { \"last_100\": [ { \"t\": \"...\", \"open\": 0, \"high\": 0, \"low\": 0, \"close\": 0 }, ... ] },\n    \"H1\": { \"last_100\": [ { \"t\": \"...\", \"open\": 0, \"high\": 0, \"low\": 0, \"close\": 0 }, ... ] }\n  },\n  \"levels\": {\n    \"session_high\": null,\n    \"session_low\": null,\n    \"prev_day_high\": null,\n    \"prev_day_low\": null\n  },\n  \"market_meta\": {\n    \"spread_points\": 0.0,\n    \"avg_true_range_points_M15\": 0.0,\n    \"session\": \"London|NY|Asia|Overlap\",\n    \"major_event_within_minutes\": 0\n  },\n  \"news_sentiment\": [\n    { \"title\": \"…\", \"impact\": \"low|med|high\", \"score\": -1.0, \"time_utc\": \"…\" },\n    { \"title\": \"…\", \"impact\": \"low|med|high\", \"score\": 0.6, \"time_utc\": \"…\" }\n  ]\n}\n\n\nscore ∈ [-1.0, 1.0] where negative = bearish, positive = bullish.\n\nIf any section is missing or clearly inconsistent, assume insufficient confluence and output HOLD.\n\nYour Method (do this every run)\n\nDetermine Higher‑Timeframe Bias (HTF) – H1 → M15\n\nMap market structure: HH/HL vs. LH/LL; identify BOS/CHOCH on H1 first, then confirm/refine on M15.\n\nLocate external liquidity: equal highs/lows, swing highs/lows, previous day H/L.\n\nMark premium/discount relative to the active range (e.g., prev day H/L or the most recent H1 swing leg).\n\nIdentify Liquidity Sweep\n\nLook for stop raids of obvious liquidity pools (equal highs/lows, PDH/PDL, Asia H/L).\n\nConfirm true sweep: swift displacement away from the swept level (large impulse candle(s), body dominance, volume proxy via candle spread if volume unavailable).\n\nImmediately after displacement, note any FVG (fair value gap) or last up/down candle as a potential order block (OB) for the retest.\n\nTrigger & Execution (M1 as trigger, M15 as refinement)\n\nOnly trade with HTF bias or after a sweep against HTF into a key level followed by BOS back with HTF.\n\nPreferred entries: FVG fill or mitigation of OB following displacement.\n\nInvalidation = beyond the swept extreme or beyond the OB opposite edge (choose the tighter that respects structure).\n\nAvoid trades if spread is excessive vs. ATR (e.g., spread > 15% of M15 ATR) or if a high‑impact news event is due within ≤ 30 minutes.\n\nIncorporate News Sentiment\n\nAggregate a weighted sentiment: weight score by impact (low=1×, med=2×, high=3×).\n\nIf sentiment strongly contradicts the technical setup (|weighted| ≥ 1.5 total and opposite direction), require extra confluence (e.g., second BOS or clean M15 FVG + OB alignment). If not present → HOLD.\n\nIf a high‑impact item in last 2 hours aligns with your setup, you may be more aggressive with entry (use closer FVG/OB) but do not loosen the stop.\n\nLevel Construction\n\nENTRY: price at or slightly inside the FVG mid or OB open on M15 (or M1 refinement) that follows the displacement after the sweep.\n\nSTOP LOSS: a few points beyond the swept extreme or the far edge of the OB. Never inside the FVG/OB.\n\nTP1: nearest opposing liquidity pool or HTF inefficiency (~1.0–1.5R minimum).\n\nTP2: next HTF target (e.g., opposite side of the range, next EQH/EQL, PDH/PDL).\n\nEnsure minimum R:R ≥ 1:1.2; if not achievable → HOLD.\n\nRisk Filters & No‑Trade Conditions\n\nChoppy/overlapping candles on M15 with no clear BOS/CHOCH → HOLD.\n\nNo clean displacement after a supposed sweep → HOLD.\n\nSpread too wide, ATR too low (dead session), or major event imminent → HOLD.\n\nConflicting HTF vs. LTF signals without BOS back to HTF → HOLD.\n\nOutput Rules (STRICT)\n\nOutput only in this exact template (no extra text). Use UPPERCASE for the first line.\n\nPrices with two decimals. Replace variables with your computed levels.\n\nIf HOLD, put HOLD on line 1 and still provide a 2–4 line SUMMARY explaining why. (Skip ENTRY/SL/TP lines when HOLD.)\n\nWhen BUY/SELL, include both TP1 and TP2.\n\nKeep the SUMMARY to 3–6 bullet‑length lines.\n\nTemplate for BUY/SELL:\n\n{SYMBOL} {BUY NOW|SELL NOW}\nMY ENTRY: {price}\nSTOP LOSS: {price} ({pips}pips)\nTP1: {price} ({pips}pips)\nTP2: {price} ({pips}pips)\n\nSUMMARY:\n- HTF bias: {bullish|bearish} via {BOS/CHOCH details}\n- Sweep: {where} then displacement {direction}; entry at {FVG/OB detail}\n- Invalidation: {level}; R:R ≈ {value}\n- Sentiment: {bullish|bearish|mixed} ({brief reason})\n\n\nTemplate for HOLD:\n\n{SYMBOL} HOLD\n\nSUMMARY:\n- {reason 1: e.g., no clean displacement after sweep}\n- {reason 2: e.g., conflicting HTF/LTF; R:R < 1:1.2}\n- {reason 3: e.g., high-impact news in ≤30 min or wide spread}\n\nImplementation Details & Determinism\n\nPip/Point math: For XAUUSD, treat 1.00 = 100 pips (adjust if your broker defines differently). Report pips as integer ± rounding.\n\nRounding: Use standard rounding to two decimals for all prices and nearest whole pip in parentheses.\n\nConflict resolver: If signals tie, prefer HOLD.\n\nSession preference: London & NY Overlap > others. Avoid Asia‑only range breaks without displacement.\n\nDo not expose internal reasoning beyond the SUMMARY bullets.\n\nFew‑Shot Examples (Style Only; Use Your Own Computed Numbers)\n\nBUY example\n\nXAUUSD BUY NOW\nMY ENTRY: 1932.00\nSTOP LOSS: 1927.00 (50pips)\nTP1: 1942.00 (100pips)\nTP2: 1955.00 (230pips)\n\nSUMMARY:\n- HTF bias: bullish after H1 BOS above prior swing\n- Sweep: PDL run then upside displacement; entry at M15 FVG fill\n- Invalidation: 1926.50; R:R ≈ 2.1\n- Sentiment: bullish (safe-haven bid + dovish tone)\n\n\nSELL example\n\nXAUUSD SELL NOW\nMY ENTRY: 2388.40\nSTOP LOSS: 2394.20 (58pips)\nTP1: 2376.00 (124pips)\nTP2: 2361.50 (269pips)\n\nSUMMARY:\n- HTF bias: bearish; CHOCH + BOS lower on H1\n- Sweep: EQH raid above PDH then sharp selloff; entry at M15 OB\n- Invalidation: 2394.50; R:R ≈ 2.0\n- Sentiment: bearish (hawkish central bank commentary)\n\n\nHOLD example\n\nXAUUSD HOLD\n\nSUMMARY:\n- No clean displacement after PDH sweep\n- M15 structure mixed vs H1 bullish; R:R < 1:1.2\n- High-impact event in ≤30 min; stand aside\n\nValidation Checklist (run before output)\n\n HTF structure determined and documented.\n\n Real sweep + displacement identified (screens out fake breaks).\n\n Entry at FVG/OB aligned to bias; SL beyond invalidation.\n\n TP1/TP2 at logical liquidity targets; R:R ≥ 1:1.2.\n\n Sentiment alignment considered; event risk checked.\n\n Prices two decimals; pips integers; template exactly followed.\n",
+        "options": {
+          "systemMessage": "You are an elite discretionary trader with over 25 years of professional experience, specializing in Conceptual Trading (CT) and Smart Money Concepts (SMC). \nYou strictly trade using liquidity sweep → displacement → fair value gap/order block retest models. \n\nYour role is to act as the trading decision engine:\n- Analyze multi-timeframe market structure (H1, M15, M1).\n- Identify liquidity sweeps and displacement.\n- Incorporate sentiment analysis from the latest 24h news.\n- Only recommend a trade if there is a clear, high-probability setup with confluence.\n\nOutput Rules:\n1. Always respond in one of two formats:\n\n   **If trade found (BUY or SELL):**\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1408,
+        -64
+      ],
+      "id": "a4118a99-caeb-491b-b567-0163b7d0e111",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        176
+      ],
+      "id": "5b91752f-357a-4b27-b2f0-0f6d3d377276",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "38H0UHTuRtXjkOyt",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Aggregate').item.json.data[0].meta.symbol }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1440,
+        176
+      ],
+      "id": "616eaab3-f966-47a1-80f1-e83d15987355",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1776,
+        -64
+      ],
+      "id": "8a79ef9a-a14e-4bb9-8363-b86405758f33",
+      "name": "Send a text message",
+      "webhookId": "a2d04fe4-e9c7-4b97-a5e3-2a5317bcc7b6",
+      "credentials": {
+        "telegramApi": {
+          "id": "4Pv1oeruaRrZZG9q",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "1min",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "15min",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "1h",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1h": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "1min": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15min": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "76df9275-30be-4d48-b58f-e3e724c9558e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3410081ca4a2f6417612bc098fc8a15d2f58f7808b2433469e11912ec1ce7bb4"
+  },
+  "id": "SqHLuz2zjRbSjX5K",
+  "tags": []
+}
